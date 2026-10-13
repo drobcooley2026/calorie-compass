@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#173f35">
+<title>Calorie Compass</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f6f3;color:#173f35;margin:0;padding:20px}
+h1{background:#173f35;color:white;padding:20px;border-radius:12px}
+.card{background:white;padding:18px;margin:14px 0;border-radius:12px}
+label{display:block;margin-top:12px}
+input,button{padding:12px;margin-top:6px;font-size:16px;max-width:100%}
+input{width:90%;border:1px solid #ccc;border-radius:8px}
+button{background:#173f35;color:white;border:0;border-radius:8px}
+.result{font-size:18px;font-weight:bold}
+</style>
+</head>
+<body>
+<h1>Calorie Compass</h1>
+<p>Your personal calorie, nutrition and exercise tracker.</p>
+
+<div class="card">
+<h2>Daily summary</h2>
+<p>Calorie target: <span id="target">2000</span> kcal</p>
+<p>Calories eaten: <span id="eaten">0</span> kcal</p>
+<p>Exercise burned: <span id="burned">0</span> kcal</p>
+<p class="result">Calories remaining: <span id="remaining">2000</span></p>
+</div>
+
+<div class="card">
+<h2>Add food</h2>
+<label>Food name</label>
+<input id="foodName" placeholder="Chicken breast">
+<label>Calories</label>
+<input id="foodCalories" type="number" min="0" placeholder="250">
+<label>Protein (grams)</label>
+<input id="protein" type="number" min="0" placeholder="30">
+<label>Carbs (grams)</label>
+<input id="carbs" type="number" min="0" placeholder="10">
+<label>Fat (grams)</label>
+<input id="fat" type="number" min="0" placeholder="5">
+<br>
+<button onclick="addFood()">Add food</button>
+<div id="foodList"></div>
+</div>
+
+<div class="card">
+<h2>Log exercise</h2>
+<label>Exercise name</label>
+<input id="exerciseName" placeholder="Walking">
+<label>Estimated calories burned</label>
+<input id="exerciseCalories" type="number" min="0" placeholder="150">
+<br>
+<button onclick="addExercise()">Add exercise</button>
+</div>
+
+<div class="card">
+<h2>Daily macro totals</h2>
+<p>Protein: <span id="proteinTotal">0</span> g</p>
+<p>Carbohydrates: <span id="carbsTotal">0</span> g</p>
+<p>Fat: <span id="fatTotal">0</span> g</p>
+</div>
+
+<div class="card">
+<h2>Backup</h2>
+<button onclick="exportData()">Export diary backup</button>
+</div>
+
+<script>
+const KEY = "calorie-compass-basic";
+let diary;
+
+try {
+  diary = JSON.parse(localStorage.getItem(KEY)) || {
+    foods: [], exercises: [], target: 2000
+  };
+} catch (e) {
+  diary = { foods: [], exercises: [], target: 2000 };
+}
+
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(diary));
+  render();
+}
+
+function addFood() {
+  const name = document.getElementById("foodName").value.trim();
+  const calories = Number(document.getElementById("foodCalories").value);
+  const protein = Number(document.getElementById("protein").value || 0);
+  const carbs = Number(document.getElementById("carbs").value || 0);
+  const fat = Number(document.getElementById("fat").value || 0);
+
+  if (!name || document.getElementById("foodCalories").value === "" ||
+      !Number.isFinite(calories) || calories < 0 ||
+      protein < 0 || carbs < 0 || fat < 0) {
+    alert("Enter a food name and valid nutrition values.");
+    return;
+  }
+
+  diary.foods.push({ name, calories, protein, carbs, fat });
+  save();
+
+  document.getElementById("foodName").value = "";
+  document.getElementById("foodCalories").value = "";
+  document.getElementById("protein").value = "";
+  document.getElementById("carbs").value = "";
+  document.getElementById("fat").value = "";
+}
+
+function addExercise() {
+  const name = document.getElementById("exerciseName").value.trim();
+  const raw = document.getElementById("exerciseCalories").value;
+  const calories = Number(raw);
+
+  if (!name || raw === "" || !Number.isFinite(calories) || calories < 0) {
+    alert("Enter an exercise name and valid calories burned.");
+    return;
+  }
+
+  diary.exercises.push({ name, calories });
+  save();
+
+  document.getElementById("exerciseName").value = "";
+  document.getElementById("exerciseCalories").value = "";
+}
+
+function render() {
+  const eaten = diary.foods.reduce((s, f) => s + f.calories, 0);
+  const burned = diary.exercises.reduce((s, e) => s + e.calories, 0);
+  const protein = diary.foods.reduce((s, f) => s + f.protein, 0);
+  const carbs = diary.foods.reduce((s, f) => s + f.carbs, 0);
+  const fat = diary.foods.reduce((s, f) => s + f.fat, 0);
+
+  document.getElementById("target").textContent = diary.target;
+  document.getElementById("eaten").textContent = eaten;
+  document.getElementById("burned").textContent = burned;
+  document.getElementById("remaining").textContent =
+    diary.target - eaten;
+
+  document.getElementById("proteinTotal").textContent = protein;
+  document.getElementById("carbsTotal").textContent = carbs;
+  document.getElementById("fatTotal").textContent = fat;
+
+  document.getElementById("foodList").innerHTML =
+    "<h3>Logged foods</h3>" +
+    diary.foods.map((f, i) =>
+      "<p>" + escapeHTML(f.name) + " — " + f.calories +
+      " kcal <button onclick='removeFood(" + i + ")'>Delete</button></p>"
+    ).join("");
+
+  localStorage.setItem(KEY, JSON.stringify(diary));
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;"
+  })[c]);
+}
+
+function removeFood(i) {
+  diary.foods.splice(i, 1);
+  save();
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(diary, null, 2)], {
+    type: "application/json"
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "calorie-compass-backup.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+render();
+</script>
+</body>
+</html>
