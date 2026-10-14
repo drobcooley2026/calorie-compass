@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173b35">
+  <meta name="description" content="A simple daily food, macro, exercise, and energy-balance estimator.">
+  <title>Calorie Compass</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon.svg">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brandmark" aria-hidden="true">↗</div>
+    <div><div class="eyebrow">DAILY WELLNESS ESTIMATOR</div><h1>Calorie Compass</h1></div>
+    <button id="installBtn" class="quiet hidden" type="button">Install</button>
+  </header>
+  <main>
+    <section class="intro">
+      <div><p class="eyebrow">YOUR DAY, AT A GLANCE</p><h2>Small entries. A clearer picture.</h2>
+      <p>Describe what you ate and how you moved. Get practical estimates for calories, macros, exercise burn, and daily energy balance.</p></div>
+      <div class="date-pill" id="todayLabel"></div>
+    </section>
+
+    <section class="panel profile-panel">
+      <div class="section-heading"><div><p class="eyebrow">STEP 1</p><h2>Your profile & goals</h2></div><button id="saveProfileBtn" class="secondary" type="button">Save profile</button></div>
+      <p class="muted small">Used to estimate baseline energy needs and suggested macro targets. Estimates are not medical advice.</p>
+      <div class="form-grid">
+        <label>Age <span class="unit">years</span><input id="age" type="number" min="18" max="110" placeholder="e.g. 32"></label>
+        <label>Sex used for equation<select id="sex"><option value="female">Female</option><option value="male">Male</option><option value="neutral">Prefer not to specify / use midpoint</option></select></label>
+        <label>Height <span class="unit">cm</span><input id="height" type="number" min="100" max="240" placeholder="e.g. 168"></label>
+        <label>Weight <span class="unit">kg</span><input id="weight" type="number" min="30" max="350" step="0.1" placeholder="e.g. 72"></label>
+        <label>Typical activity level<select id="activity"><option value="1.2">Mostly sitting / little planned exercise</option><option value="1.375">Lightly active</option><option value="1.55">Moderately active</option><option value="1.725">Very active</option><option value="1.9">Extremely active</option></select></label>
+        <label>Goal<select id="goal"><option value="maintain">Maintain weight</option><option value="lose">Gradual weight loss</option><option value="gain">Gradual weight gain</option></select></label>
+      </div>
+      <div class="target-row" id="targets"><div class="target-empty">Enter your age, height, and weight to calculate estimated targets.</div></div>
+    </section>
+
+    <div class="two-col">
+      <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow">STEP 2</p><h2>Food & drinks</h2></div><span class="icon-bubble">＋</span></div>
+        <p class="muted small">Use everyday language: “two eggs scrambled in butter and a slice of sourdough” works well.</p>
+        <label>What did you have?<textarea id="foodText" rows="3" placeholder="Describe a meal, snack, or drink. Include portion sizes when you can."></textarea></label>
+        <div class="inline-fields"><label>Meal<select id="mealType"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option><option>Drink</option></select></label><label>Portion notes <input id="portionNotes" placeholder="optional"></label></div>
+        <button id="estimateFoodBtn" class="primary full" type="button">Estimate food & macros</button>
+        <p id="foodStatus" class="status" role="status"></p>
+        <div id="foodPreview" class="preview hidden"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow">STEP 3</p><h2>Exercise & movement</h2></div><span class="icon-bubble">↗</span></div>
+        <p class="muted small">Include activity, duration, and intensity if you know it. Estimates vary by person and conditions.</p>
+        <label>What activity did you do?<textarea id="exerciseText" rows="3" placeholder="e.g. brisk walk for 35 minutes, moderate pace"></textarea></label>
+        <div class="inline-fields"><label>Duration <span class="unit">minutes</span><input id="duration" type="number" min="1" max="1000" placeholder="e.g. 35"></label><label>Intensity<select id="intensity"><option value="light">Light</option><option value="moderate" selected>Moderate</option><option value="vigorous">Vigorous</option><option value="auto">Let AI estimate</option></select></label></div>
+        <button id="estimateExerciseBtn" class="primary full" type="button">Estimate exercise burn</button>
+        <p id="exerciseStatus" class="status" role="status"></p>
+        <div id="exercisePreview" class="preview hidden"></div>
+      </section>
+    </div>
+
+    <section class="panel dashboard">
+      <div class="section-heading"><div><p class="eyebrow">YOUR DAILY TOTAL</p><h2>Energy & macros</h2></div><button id="newDayBtn" class="secondary" type="button">Clear today's entries</button></div>
+      <div class="metric-grid">
+        <div class="metric"><span>Calories eaten</span><strong id="totalCalories">0</strong><small>kcal</small></div>
+        <div class="metric"><span>Exercise burn</span><strong id="totalBurn">0</strong><small>kcal estimated</small></div>
+        <div class="metric"><span>Estimated daily balance</span><strong id="balance">—</strong><small id="balanceNote">Add profile and entries</small></div>
+      </div>
+      <div class="balance-track"><div id="balanceBar"></div></div>
+      <p class="muted small" id="balanceExplanation">Daily balance compares food intake with estimated total daily energy expenditure (baseline needs plus logged exercise). This is a rough estimate, not a direct measurement.</p>
+      <h3>Macro progress</h3>
+      <div class="macro-list">
+        <div class="macro-item"><div class="macro-top"><span>Protein</span><strong><span id="proteinTotal">0</span> g <small id="proteinGoal">/ —</small></strong></div><div class="progress"><div id="proteinBar"></div></div></div>
+        <div class="macro-item"><div class="macro-top"><span>Carbohydrates</span><strong><span id="carbsTotal">0</span> g <small id="carbsGoal">/ —</small></strong></div><div class="progress"><div id="carbsBar"></div></div></div>
+        <div class="macro-item"><div class="macro-top"><span>Fat</span><strong><span id="fatTotal">0</span> g <small id="fatGoal">/ —</small></strong></div><div class="progress"><div id="fatBar"></div></div></div>
+      </div>
+      <h3>Today's entries</h3>
+      <div id="entries" class="entries"><p class="muted">Your food and exercise estimates will appear here.</p></div>
+    </section>
+
+    <section class="panel settings">
+      <details>
+        <summary>AI connection & privacy</summary>
+        <p class="muted small">For AI-generated estimates, deploy the included Cloudflare Worker and enter its URL below. Never put an AI provider secret key in this page or in a public GitHub repository. Without the worker, the app uses a lightweight built-in estimate for common foods and activities.</p>
+        <label>AI estimation endpoint (Worker URL)<input id="apiEndpoint" type="url" placeholder="https://your-worker.your-subdomain.workers.dev"></label>
+        <button id="saveSettingsBtn" class="secondary" type="button">Save endpoint</button>
+        <p class="muted tiny">Profile and entries are saved in this browser on this device. They are not synced between devices. AI descriptions are sent to the endpoint you configure when you request an estimate.</p>
+      </details>
+    </section>
+    <footer><p>Calorie Compass is for general education and self-monitoring. Calorie and macro estimates can be substantially wrong, especially for restaurant meals, oils, sauces, mixed dishes, and imprecise portions. It is not intended for people under 18 or as a substitute for individualized medical or dietetic advice.</p></footer>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
