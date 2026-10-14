@@ -1,0 +1,7 @@
+
+name = "calorie-compass-estimator"
+main = "worker.js"
+compatibility_date = "2026-10-14"
+
+[vars]
+MODEL = "gpt-4o-mini"
